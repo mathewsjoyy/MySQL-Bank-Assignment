@@ -193,6 +193,17 @@ CREATE TRIGGER transactions_in_out_amount_check BEFORE INSERT ON transactions
         END $$
 DELIMITER ;
 
+/* Trigger to stop invalid transactions */
+CREATE TRIGGER bank_accounts_transactions_prevent_sql_injection BEFORE INSERT ON transactions
+BEGIN
+  IF NEW.isOutgoing THEN
+    IF NEW.amount < 0 THEN
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Negative amount not allowed';
+    END IF;
+  END IF;
+END;
+
+
 
 
 /* Populating the created tables with data */
@@ -263,9 +274,25 @@ VALUES
 ("JOINTACC", "A joint account is a simple way for two people to share access to the same bank account creating one monthly statement.");
 
 
-
 -- FOR ACCOUNTS TABLE
 /* the bank branch is encoded into the account number, so internally you can immediately see that if the account begins with “700″, then the account “belongs” to Branch X and if it starts with “703” it “belongs” to Branch Y. */
+
+
+
+-- insert differnt transaction types into the transaction_types table
+INSERT INTO transaction_types (transaction_type_id, description)
+VALUES
+("DEPOSIT", "A deposit is a payment made to a bank account. It is usually made by a customer to pay for goods or services."),
+("WITHDRAWAL", "A withdrawal is a payment made from a bank account. It is usually made by a customer to pay for goods or services."),
+("TRANSFER", "A transfer is a payment made from one bank account to another. It is usually made by a customer to pay for goods or services."),
+("INTEREST", "An interest payment is made to a bank account. It is usually made by a bank to pay the interest on a customer’s account."),
+("FEE", "A fee is a payment made to a bank account. It is usually made by a bank to pay for goods or services."),
+("CHARGE", "A charge is a payment made to a bank account. It is usually made by a bank to pay for goods or services."),
+("PAYMENT", "A payment is a payment made to a bank account. It is usually made by a customer to pay for goods or services.");
+
+
+
+
 
 
 
