@@ -44,8 +44,7 @@ CREATE TABLE account (
     created_date DATE DEFAULT now(),
     branch_id INT NOT NULL,
     PRIMARY KEY (account_id),
-    UNIQUE(sort_code),
-    UNIQUE(account_number)
+    UNIQUE(sort_code, account_number)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1; 
 
 CREATE TABLE account_types (
@@ -69,7 +68,7 @@ CREATE TABLE address (
     state VARCHAR(50) NOT NULL,
     city VARCHAR(50) NOT NULL,
     PRIMARY KEY (address_id),
-    UNIQUE(postal_code)
+    INDEX(postal_code)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
 
 CREATE TABLE transactions (
@@ -78,8 +77,8 @@ CREATE TABLE transactions (
     transaction_date DATETIME NOT NULL DEFAULT now(),
     isOutgoing BOOLEAN NOT NULL DEFAULT FALSE,
     isIncoming BOOLEAN NOT NULL DEFAULT FALSE,
-    amount DECIMAL(10,2) NOT NULL DEFAULT 0,
-    reason VARCHAR(255) DEFAULT "n/a",
+    amount DECIMAL(13,2) NOT NULL DEFAULT 0,
+    transaction_type_id VARCHAR(15) NOT NULL,
     PRIMARY KEY (transaction_id)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
 
@@ -93,7 +92,7 @@ CREATE TABLE transaction_types (
 CREATE TABLE loans (
 	loan_id INT,
     account_id INT NOT NULL,
-    monthly_rate DECIMAL(10,2) NOT NULL,
+    monthly_rate DECIMAL(13,2) NOT NULL,
     duration_months INT NOT NULL,
     first_payment DATE NOT NULL,
     monthly_due_date DATE NOT NULL,
@@ -197,7 +196,7 @@ DELIMITER ;
 CREATE TRIGGER bank_accounts_transactions_prevent_sql_injection BEFORE INSERT ON transactions
 BEGIN
   IF NEW.isOutgoing THEN
-    IF NEW.amount < 0 THEN
+    IF NEW.amount < 0.00 THEN
       SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Negative amount not allowed';
     END IF;
   END IF;
@@ -247,12 +246,6 @@ VALUES
 (10, "07777482911", "44", "mobile"),
 (11, "016123834880", "44", "landline"),
 (12, "01636548900", "44", "landline");
- 
-INSERT INTO branch (branch_id, address_id, branch_name) 
-VALUES 
-(1, 1, "London main branch"),
-(2, 2, "Manchester"),
-(3, 3, "Lincoln");
 
 INSERT INTO customer (customer_id, first_name, last_name, date_of_birth, email)
 VALUES
@@ -267,6 +260,31 @@ VALUES
 (9, 'Izabel', 'Boyson', '1995-07-20', 'iboyson8@dion.ne.jp'),
 (10, 'Benedicto', 'Scane', '1959-06-02', 'bscane9@tripadvisor.com');
 
+INSERT INTO customer_contact_number (contact_id, customer_id)
+VALUES
+(11,1),
+(11,9),
+(1,2),
+(2,4),
+(3,6),
+(4,5),
+(5,7),
+(6,10),
+(7,9),
+(8,8),
+(9,1),
+(10,3);
+
+
+
+
+ 
+INSERT INTO branch (branch_id, address_id, branch_name) 
+VALUES 
+(700, 1, "London main branch"),
+(800, 2, "Manchester"),
+(600, 3, "Lincoln");
+
 INSERT INTO account_types (account_type_id, description)
 VALUES 
 ("CURRENTACC", "A current account is used for daily banking needs, such as making cash deposits and withdrawals, receiving their salary and setting up direct debits."),
@@ -275,7 +293,19 @@ VALUES
 
 
 -- FOR ACCOUNTS TABLE
-/* the bank branch is encoded into the account number, so internally you can immediately see that if the account begins with “700″, then the account “belongs” to Branch X and if it starts with “703” it “belongs” to Branch Y. */
+/* the bank branch is encoded into the account number, so internally you can immediately see that if the account begins with “700″,
+then the account “belongs” to Branch X and if it starts with “703” it “belongs” to Branch Y. */
+INSERT INTO account (account_id, customer_id, account_type_id, opening_balance, account_number, sort_code, branch_id)
+VALUES
+(),
+(),
+(),
+(),
+(),
+(),
+();
+
+
 
 
 
