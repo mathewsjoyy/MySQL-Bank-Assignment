@@ -163,49 +163,16 @@ ALTER TABLE loan ADD CONSTRAINT fk_loan_account_account_id
 FOREIGN KEY (account_id) REFERENCES account(account_id)
 ON DELETE CASCADE ON UPDATE CASCADE;
 
+-- Check constraints to verify valid data before inserting/updating, else remove that row
+-- Check on accounts table to make sure opening balance is greater then 50
+ALTER TABLE account ADD CONSTRAINT ob_greater CHECK (opening_balance > 50);
 
+-- Check transactions table to ensure a transaction isnt both incoming and outgoing
+ALTER TABLE transaction ADD CONSTRAINT valid_transaction CHECK ((isOutgoing = true AND isIncoming = false) OR
+                                                               (isOutgoing = false AND isIncoming = true));
 
-/* DML (Data Manipulation) QUERIES */
-
-/* Trigger on account table to prevent users entering a opening balance less than 51 */
-DELIMITER $$
-CREATE TRIGGER account_opening_balance_check BEFORE INSERT ON account
-	FOR EACH ROW 
-    	BEGIN 
-        	IF NEW.opening_balance <= 50.00 THEN
-            	SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Your opening balance must be greater then 50.';
-                ROLLBACK
-            END IF
-        END$$
-DELIMITER ;
-
-/* Trigger on transactions table to ensure a transaction isnt both incoming and outgoing */
-DELIMITER $$
-CREATE TRIGGER transactions_in_out_amount_check BEFORE INSERT ON transactions
-	FOR EACH ROW
-    	BEGIN
-        	IF (NEW.isOutgoing = true and NEW.isIncoming = true) THEN
-            	SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Both "isOutgoing" and "isIncoming" columns cannot be set to "true"';
-                ROLLBACK
-            END IF;
-        END $$
-DELIMITER ;
-
-/* Trigger to stop invalid transactions */
-DELIMITER $$
-CREATE TRIGGER bank_accounts_transactions_prevent_sql_injection BEFORE INSERT ON transactions
-BEGIN
-  IF NEW.isOutgoing THEN
-    IF NEW.amount <= 0.00 THEN
-      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Negative amount not allowed';
-    END IF;
-  END IF;
-END $$
-DELIMITER ;
-
-
-
-/* Populating the created tables with data */
+-- DML (Data Manipulation Language) QUERIES 
+-- Populating the created tables with data
 INSERT INTO address (address_id, address_line1, address_line2, postal_code, state, city)
 VALUES
 (1, "11 parks bridge", "west avenue road", "E1 7AB", "Greater London City of London", "London"),
@@ -218,6 +185,19 @@ VALUES
 (8, "61 North Street", NULL, "HA72 6ML", "Middlesex", "Harrow"),
 (9, "52 The Avenue", NULL, "NG23 2MO", "Nottinghamshire", "Nottingham"),
 (10, "78 Queen Street", NULL, "M1 1AD", "Greater Manchester", "Manchester");
+
+INSERT INTO customer (customer_id, first_name, last_name, date_of_birth, email)
+VALUES
+(1, 'Orran', 'Targetter', '1996-12-08', 'otargetter0@ehow.com'),
+(2, 'Danell', 'Braunroth', '1991-11-25', 'dbraunroth1@xrea.com'),
+(3, 'Boris', 'Kesley', '1986-11-22', 'bkesley2@addtoany.com'),
+(4, 'Antonin', 'Bladon', '1987-03-26', 'abladon3@jugem.jp'),
+(5, 'Dorey', 'Nortcliffe', '1962-06-9', 'dnortcliffe4@about.me'),
+(6, 'Karlan', 'Scedall', '1982-07-11', 'kscedall5@alibaba.com'),
+(7, 'Brewster', 'Swett', '1987-03-13', 'bswett6@squidoo.com'),
+(8, 'Jolynn', 'Twinn', '1981-01-22', 'jtwinn7@about.me'),
+(9, 'Izabel', 'Boyson', '1995-07-20', 'iboyson8@dion.ne.jp'),
+(10, 'Benedicto', 'Scane', '1959-06-02', 'bscane9@tripadvisor.com');
 
 INSERT INTO customer_address (customer_id, address_id)
 VALUES
@@ -246,19 +226,6 @@ VALUES
 (10, "07777482911", "44", "mobile"),
 (11, "016123834880", "44", "landline");
 
-INSERT INTO customer (customer_id, first_name, last_name, date_of_birth, email)
-VALUES
-(1, 'Orran', 'Targetter', '1996-12-08', 'otargetter0@ehow.com'),
-(2, 'Danell', 'Braunroth', '1991-11-25', 'dbraunroth1@xrea.com'),
-(3, 'Boris', 'Kesley', '1986-11-22', 'bkesley2@addtoany.com'),
-(4, 'Antonin', 'Bladon', '1987-03-26', 'abladon3@jugem.jp'),
-(5, 'Dorey', 'Nortcliffe', '1962-06-9', 'dnortcliffe4@about.me'),
-(6, 'Karlan', 'Scedall', '1982-07-11', 'kscedall5@alibaba.com'),
-(7, 'Brewster', 'Swett', '1987-03-13', 'bswett6@squidoo.com'),
-(8, 'Jolynn', 'Twinn', '1981-01-22', 'jtwinn7@about.me'),
-(9, 'Izabel', 'Boyson', '1995-07-20', 'iboyson8@dion.ne.jp'),
-(10, 'Benedicto', 'Scane', '1959-06-02', 'bscane9@tripadvisor.com');
-
 INSERT INTO customer_contact_number (contact_id, customer_id)
 VALUES
 (11,1),
@@ -286,15 +253,15 @@ VALUES
 ("SAVINGSACC", "With a saving account you pay money into and earn interest from."),
 ("JOINTACC", "A joint account is a simple way for two people to share access to the same bank account creating one monthly statement.");
 
--- FOR ACCOUNTS TABLE
+-- For the accounts table...
 /* the bank code and bank branch code is encoded into the sort number, e.g. the format of the sort code is XXYYZZ where XX = 55 (the bank code for our bank),
 YY and ZZ = branch id. The account number is just a random set of 8 characters.*/
-INSERT INTO account (account_id, account_type_id, opening_balance, account_number, sort_code, create_date, branch_id)
+INSERT INTO account (account_id, account_type_id, opening_balance, account_number, sort_code, created_date, branch_id)
 VALUES
 (1, "CURRENTACC", 500, 89947586, 551100,"2020-01-20" ,11),
 (2, "CURRENTACC", 95, 12347687, 551100,"2020-02-15" ,11),
 (3, "SAVINGSACC", 650.50, 90857689, 551100,"2020-05-17", 11),
-(4, "CURRENTACC", 100, 76587654, 553300,"2020-06-09", 33),
+(4, "CURRENTACC", 250, 76587654, 553300,"2020-06-09", 33),
 (5, "SAVINGSACC", 1000.50, 65767545, 553300,"2020-09-03" , 33),
 (6, "CURRENTACC", 140, 87676542, 553300,"2020-11-22", 33),
 (7, "JOINTACC", 1500, 8765675, 553300,"2021-02-11", 33),
@@ -316,7 +283,6 @@ VALUES
 (6,8),
 (10,9);
 
--- insert differnt transaction types into the transaction_types table
 INSERT INTO transaction_type (transaction_type_id, description)
 VALUES
 ("DEPOSIT", "A deposit is a payment made to a bank account. It is usually made by a customer to pay for goods or services."),
@@ -324,12 +290,13 @@ VALUES
 ("TRANSFER", "A transfer is a payment made from one bank account to another. It is usually made by a customer to pay for goods or services."),
 ("INTEREST", "An interest payment is made to a bank account. It is usually made by a bank to pay the interest on a customer’s account."),
 ("FEE", "A fee is a payment made to a bank account. It is usually made by a bank to pay for goods or services."),
-("CHARGE", "A charge is a payment made to a bank account. It is usually made by a bank to pay for goods or services."),
-("PAYMENT", "A payment is a payment made to a bank account. It is usually made by a customer to pay for goods or services.");
+("PAYMENT", "A payment is a payment made to a bank account. It is usually made by a customer to pay for goods or services."),
+("LOAN", "A loan is money coming into a customers account. It is usually made by the bank."),
+("DIRECTDEPOSIT", "A direct deposit is money given to a bank account, usually from an employee as compensation for there labour.");
 
 INSERT INTO loan (loan_id, account_id, monthly_rate, duration_months, first_payment, monthly_due_day)
 VALUES
-(1,4,300,25,"2020-07-21", 22),
+(1,4,300,25,"2020-06-18", 01),
 (2,5,200,30,"2020-09-04", 10),
 (3,6,150.50,15,"2021-01-01", 17),
 (4,7,340,20,"2021-07-22", 08),
@@ -337,8 +304,17 @@ VALUES
 
 INSERT INTO transaction (transaction_id, account_id, transaction_date, isOutgoing, isIncoming, amount, transaction_type_id)
 VALUES
-(),
-();
+(1, 4, "2020-06-09", false, true, 250, "DEPOSIT"), -- Opening balance
+(2, 4, "2020-06-12", true, false, 5.25, "PAYMENT"),
+(3, 4, "2020-06-13", true, false, 2.30, "PAYMENT"),
+(4, 4, "2020-06-18", false, true, 300, "LOAN"),
+(5, 4, "2020-06-23", true, false, 12.45, "PAYMENT"),
+(6, 4, "2020-06-25", true, false, 40.00, "WITHDRAWAL"),
+(7, 4, "2020-06-27", false, true, 100.75, "DIRECTDEPOSIT"),
+(8, 4, "2020-06-29", true, false, 0.99, "PAYMENT");
+
+-- INCLUDE ALL OPENING BALANCE, INITIAL LOAN PAYMENT and ALL MONTHLY DUE DATE PAYMENTS IN transactions for all accounts
+-- then make 2 more accounts for moonthly transactions.
 
 
 
@@ -350,12 +326,10 @@ VALUES
 
 
 
-
-/* DCL (Data Control Language) QUERIES */
-/* Creating users and setting permissions */
-
-/* Set users and grant permissions */
-/* We have 1 read/write user and 1 read user */
+-- DCL (Data Control Language) QUERIES 
+-- Creating users and setting permissions
+-- Set users and grant permissions
+-- We have 1 read/write user and 1 read user
 CREATE USER IF NOT EXISTS 'admin'@'localhost' IDENTIFIED BY 'AdminUser#2021'; -- Set secure passwords
 GRANT SELECT, INSERT, UPDATE, DELETE, INDEX, CREATE, ALTER 
 	ON bank_assignment TO 'admin'@'localhost';
@@ -364,6 +338,6 @@ CREATE USER IF NOT EXISTS 'read'@'localhost' IDENTIFIED BY 'ReadUser#2021';
 GRANT SELECT
 	ON bank_assignment.* TO 'read'@'localhost'; /* grant to all tables */
 
-/* Show all privileges users have been given */
+-- Show all privileges users have been given
 SHOW GRANTS FOR 'admin'@'localhost';
 SHOW GRANTS FOR 'read'@'localhost';
