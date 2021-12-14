@@ -35,19 +35,18 @@ CREATE TABLE customer_account ( -- Junction table for many-many relation (join a
 
 CREATE TABLE account (
     account_id INT AUTO_INCREMENT,
-    customer_id INT NOT NULL,
     account_type_id VARCHAR(15) NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     opening_balance DECIMAL(10,2) NOT NULL DEFAULT 51,
     account_number INT(8) NOT NULL,
-    sort_code VARCHAR(8) NOT NULL,
+    sort_code INT(6) NOT NULL,
     created_date DATE DEFAULT now(),
     branch_id INT NOT NULL,
     PRIMARY KEY (account_id),
     UNIQUE(sort_code, account_number)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1; 
 
-CREATE TABLE account_types (
+CREATE TABLE account_type (
 	account_type_id VARCHAR(15),
     description TEXT NOT NULL,
     PRIMARY KEY (account_type_id),
@@ -71,7 +70,7 @@ CREATE TABLE address (
     INDEX(postal_code)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
 
-CREATE TABLE transactions (
+CREATE TABLE transaction (
 	transaction_id INT AUTO_INCREMENT,
     account_id INT NOT NULL,
     transaction_date DATETIME NOT NULL DEFAULT now(),
@@ -82,20 +81,20 @@ CREATE TABLE transactions (
     PRIMARY KEY (transaction_id)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
 
-CREATE TABLE transaction_types (
+CREATE TABLE transaction_type (
 	transaction_type_id VARCHAR(15),
     description TEXT NOT NULL,
     PRIMARY KEY (transaction_type_id),
     UNIQUE(description)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE loans (
+CREATE TABLE loan (
 	loan_id INT,
     account_id INT NOT NULL,
     monthly_rate DECIMAL(13,2) NOT NULL,
     duration_months INT NOT NULL,
     first_payment DATE NOT NULL,
-    monthly_due_date DATE NOT NULL,
+    monthly_due_day INT(2) NOT NULL,
     PRIMARY KEY (loan_id)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
 
@@ -121,7 +120,7 @@ FOREIGN KEY (branch_id) REFERENCES branch(branch_id)
 ON DELETE CASCADE ON UPDATE CASCADE; -- DOUBLE CHECK IF THIS IS CORRECT VALID OPTION TO USE (also for the ones below)
 
 ALTER TABLE account ADD CONSTRAINT fk_account_account_types_account_type_id
-FOREIGN KEY (account_type_id) REFERENCES account_types(account_type_id)
+FOREIGN KEY (account_type_id) REFERENCES account_type(account_type_id)
 ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE branch ADD CONSTRAINT fk_branch_address_address_id
@@ -152,15 +151,15 @@ ALTER TABLE customer_contact_number ADD CONSTRAINT fk_customer_contact_number_co
 FOREIGN KEY (contact_id) REFERENCES contact_number(contact_id)
 ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE transactions ADD CONSTRAINT fk_transactions_account_account_id
+ALTER TABLE transaction ADD CONSTRAINT fk_transaction_account_account_id
 FOREIGN KEY (account_id) REFERENCES account(account_id)
 ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE transactions ADD CONSTRAINT fk_transactions_transaction_types_transaction_type_id
-FOREIGN KEY (transaction_type_id) REFERENCES transaction_types(transaction_type_id)
+ALTER TABLE transaction ADD CONSTRAINT fk_transaction_transaction_types_transaction_type_id
+FOREIGN KEY (transaction_type_id) REFERENCES transaction_type(transaction_type_id)
 ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE loans ADD CONSTRAINT fk_loans_account_account_id
+ALTER TABLE loan ADD CONSTRAINT fk_loan_account_account_id
 FOREIGN KEY (account_id) REFERENCES account(account_id)
 ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -176,8 +175,8 @@ CREATE TRIGGER account_opening_balance_check BEFORE INSERT ON account
         	IF NEW.opening_balance <= 50.00 THEN
             	SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Your opening balance must be greater then 50.';
                 ROLLBACK
-            END IF;
-        END $$
+            END IF
+        END$$
 DELIMITER ;
 
 /* Trigger on transactions table to ensure a transaction isnt both incoming and outgoing */
@@ -193,15 +192,16 @@ CREATE TRIGGER transactions_in_out_amount_check BEFORE INSERT ON transactions
 DELIMITER ;
 
 /* Trigger to stop invalid transactions */
+DELIMITER $$
 CREATE TRIGGER bank_accounts_transactions_prevent_sql_injection BEFORE INSERT ON transactions
 BEGIN
   IF NEW.isOutgoing THEN
-    IF NEW.amount < 0.00 THEN
+    IF NEW.amount <= 0.00 THEN
       SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Negative amount not allowed';
     END IF;
   END IF;
-END;
-
+END $$
+DELIMITER ;
 
 
 
@@ -217,7 +217,7 @@ VALUES
 (7, "1 Victoria Street", NULL, "UB24 8GY", "Greater London", "Southhall"),
 (8, "61 North Street", NULL, "HA72 6ML", "Middlesex", "Harrow"),
 (9, "52 The Avenue", NULL, "NG23 2MO", "Nottinghamshire", "Nottingham"),
-(10, "78 Queen Street", NULL, "LA31 1IA", "Lancashire", "Lancaster");
+(10, "78 Queen Street", NULL, "M1 1AD", "Greater Manchester", "Manchester");
 
 INSERT INTO customer_address (customer_id, address_id)
 VALUES
@@ -229,7 +229,7 @@ VALUES
 (6,8),
 (7,10),
 (8,9),
-(9,10),
+(9,3),
 (10,4);
     
 INSERT INTO contact_number (contact_id, number, country_code, type)
@@ -244,12 +244,11 @@ VALUES
 (8, "07467499910", "44", "mobile"),
 (9, "07466682917", "44", "mobile"),
 (10, "07777482911", "44", "mobile"),
-(11, "016123834880", "44", "landline"),
-(12, "01636548900", "44", "landline");
+(11, "016123834880", "44", "landline");
 
 INSERT INTO customer (customer_id, first_name, last_name, date_of_birth, email)
 VALUES
-(1, 'Orran', 'Targetter', '1979-12-08', 'otargetter0@ehow.com'),
+(1, 'Orran', 'Targetter', '1996-12-08', 'otargetter0@ehow.com'),
 (2, 'Danell', 'Braunroth', '1991-11-25', 'dbraunroth1@xrea.com'),
 (3, 'Boris', 'Kesley', '1986-11-22', 'bkesley2@addtoany.com'),
 (4, 'Antonin', 'Bladon', '1987-03-26', 'abladon3@jugem.jp'),
@@ -275,42 +274,50 @@ VALUES
 (9,1),
 (10,3);
 
-
-
-
- 
 INSERT INTO branch (branch_id, address_id, branch_name) 
 VALUES 
-(700, 1, "London main branch"),
-(800, 2, "Manchester"),
-(600, 3, "Lincoln");
+(11, 1, "London main branch"),
+(22, 2, "Manchester"),
+(33, 3, "Lincoln");
 
-INSERT INTO account_types (account_type_id, description)
+INSERT INTO account_type (account_type_id, description)
 VALUES 
 ("CURRENTACC", "A current account is used for daily banking needs, such as making cash deposits and withdrawals, receiving their salary and setting up direct debits."),
 ("SAVINGSACC", "With a saving account you pay money into and earn interest from."),
 ("JOINTACC", "A joint account is a simple way for two people to share access to the same bank account creating one monthly statement.");
 
-
 -- FOR ACCOUNTS TABLE
-/* the bank branch is encoded into the account number, so internally you can immediately see that if the account begins with “700″,
-then the account “belongs” to Branch X and if it starts with “703” it “belongs” to Branch Y. */
-INSERT INTO account (account_id, customer_id, account_type_id, opening_balance, account_number, sort_code, branch_id)
+/* the bank code and bank branch code is encoded into the sort number, e.g. the format of the sort code is XXYYZZ where XX = 55 (the bank code for our bank),
+YY and ZZ = branch id. The account number is just a random set of 8 characters.*/
+INSERT INTO account (account_id, account_type_id, opening_balance, account_number, sort_code, create_date, branch_id)
 VALUES
-(),
-(),
-(),
-(),
-(),
-(),
-();
+(1, "CURRENTACC", 500, 89947586, 551100,"2020-01-20" ,11),
+(2, "CURRENTACC", 95, 12347687, 551100,"2020-02-15" ,11),
+(3, "SAVINGSACC", 650.50, 90857689, 551100,"2020-05-17", 11),
+(4, "CURRENTACC", 100, 76587654, 553300,"2020-06-09", 33),
+(5, "SAVINGSACC", 1000.50, 65767545, 553300,"2020-09-03" , 33),
+(6, "CURRENTACC", 140, 87676542, 553300,"2020-11-22", 33),
+(7, "JOINTACC", 1500, 8765675, 553300,"2021-02-11", 33),
+(8, "CURRENTACC", 80.70, 90876875, 551100,"2021-04-15", 11),
+(9, "CURRENTACC", 150, 87878659, 552200,"2021-06-17", 22),
+(10, "CURRENTACC", 500, 38276574, 553300,"2021-10-21", 33);
 
-
-
-
+INSERT INTO customer_account (customer_id, account_id)
+VALUES
+(1,10),
+(1,7),
+(9,7),
+(2,1),
+(3,2),
+(4,3),
+(5,4),
+(7,5),
+(8,6),
+(6,8),
+(10,9);
 
 -- insert differnt transaction types into the transaction_types table
-INSERT INTO transaction_types (transaction_type_id, description)
+INSERT INTO transaction_type (transaction_type_id, description)
 VALUES
 ("DEPOSIT", "A deposit is a payment made to a bank account. It is usually made by a customer to pay for goods or services."),
 ("WITHDRAWAL", "A withdrawal is a payment made from a bank account. It is usually made by a customer to pay for goods or services."),
@@ -320,6 +327,18 @@ VALUES
 ("CHARGE", "A charge is a payment made to a bank account. It is usually made by a bank to pay for goods or services."),
 ("PAYMENT", "A payment is a payment made to a bank account. It is usually made by a customer to pay for goods or services.");
 
+INSERT INTO loan (loan_id, account_id, monthly_rate, duration_months, first_payment, monthly_due_day)
+VALUES
+(1,4,300,25,"2020-07-21", 22),
+(2,5,200,30,"2020-09-04", 10),
+(3,6,150.50,15,"2021-01-01", 17),
+(4,7,340,20,"2021-07-22", 08),
+(5,8,240.50,18,"2021-11-02", 15);
+
+INSERT INTO transaction (transaction_id, account_id, transaction_date, isOutgoing, isIncoming, amount, transaction_type_id)
+VALUES
+(),
+();
 
 
 
