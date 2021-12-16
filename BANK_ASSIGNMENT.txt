@@ -8,6 +8,7 @@ DROP DATABASE IF EXISTS bank_assignment;
 CREATE DATABASE bank_assignment;
 USE bank_assignment;
 
+
 CREATE TABLE branch (
 	branch_id INT AUTO_INCREMENT,
     address_id INT NOT NULL, 
@@ -343,9 +344,10 @@ VALUES
 (2, "2021-08-25 10:56:21", true, false, 200, "LOAN"),
 (4, "2021-09-01 10:03:03", true, false, 300, "LOAN"),
 (2, "2021-09-10 09:09:12", true, false, 200, "LOAN"),
-(6, "2021-09-17 24:23:11", true, false, 150.50, "LOAN"),
+(6, "2021-09-17 21:23:11", true, false, 150.50, "LOAN"),
 (7, "2021-09-22 21:21:23", true, false, 340, "LOAN"),
 (8, "2021-10-02 23:45:12", true, false, 240.50, "LOAN");
+
 
 
 -- Query Tasks
@@ -377,9 +379,12 @@ DELIMITER $$
         END $$
 DELIMITER ;
 
-CALL find_transactions_past_5_days ("2021-08-02");
+CALL find_transactions_past_5_days ("2020-06-13");
 
-
+/* (3) 4.3. List the customers with their current balance greater than £5000 (at least 1 customer
+should have their current balance greater than £5000). The current balance can be calculated by
+summing the opening balance of the account, all the incoming transactions of the account, and
+deducting the outgoing transactions of the account. */
 
 
 
@@ -389,31 +394,9 @@ CALL find_transactions_past_5_days ("2021-08-02");
 
  
 
-
--- UNCOMMENT THIS ONCE FOUND A ISSUE TO FIX THE ISSUE 
--- UNCOMMENT THIS ONCE FOUND A ISSUE TO FIX THE ISSUE 
--- UNCOMMENT THIS ONCE FOUND A ISSUE TO FIX THE ISSUE 
-
-
 -- DCL (Data Control Language) QUERIES 
--- Creating users and setting permissions
--- Set users and grant permissions
--- We have 1 read/write user and 1 read user
-
-/*
-
-
-CREATE USER IF NOT EXISTS 'admin'@'localhost' IDENTIFIED BY 'AdminUser#Bank'; 
-GRANT SELECT, INSERT, UPDATE, DELETE, INDEX, CREATE, ALTER 
-	ON bank_assignment TO 'admin'@'localhost';
-
-CREATE USER IF NOT EXISTS 'read'@'localhost' IDENTIFIED BY 'ReadUser#Bank';
-GRANT SELECT
-	ON bank_assignment.* TO 'read'@'localhost'; 
-
-
-SHOW GRANTS FOR 'admin'@'localhost';
-SHOW GRANTS FOR 'read'@'localhost';
-
-
-*/
+-- Creating user and setting permissions
+-- Creating a read only user to limit database access and increase security.
+DROP USER IF EXISTS 'readonly'@'localhost';
+CREATE USER 'readonly'@'localhost' IDENTIFIED BY 'Readonly1934@';
+GRANT SELECT ON bank_assignment.* TO 'readonly'@'localhost';
