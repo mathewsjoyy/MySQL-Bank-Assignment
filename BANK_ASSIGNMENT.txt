@@ -334,23 +334,18 @@ VALUES
 (5, "2020-09-03 07:04:01", false, true, 2000.50, "DEPOSIT"),
 (6, "2020-11-22 06:23:44", false, true, 850, "DEPOSIT"),
 (7, "2021-02-11 05:21:52", false, true, 1500, "DEPOSIT"),
-(8, "2021-04-15 02:01:01", false, true, 80, "DEPOSIT"),
-(9, "2021-06-17 12:21:22", false, true, 150, "DEPOSIT"),
+(8, "2021-04-15 02:01:01", false, true, 80, "DEPOSIT"),			
+(9, "2021-06-17 12:21:22", false, true, 150, "DEPOSIT"),             
 (10, "2021-10-21 14:08:33", false, true, 500, "DEPOSIT"),
 (4, "2021-07-18 18:32:57", true, false, 300, "LOAN"),
-(6, "2021-08-01 06:37:39", true, false, 150.50, "LOAN"),
-(4, "2021-08-01 09:10:23", true, false, 300, "LOAN"),
+(6, "2021-08-01 06:37:39", true, false, 150.50, "LOAN"),	
+(4, "2021-08-01 09:10:23", true, false, 300, "LOAN"),        
 (2, "2021-08-25 10:56:21", true, false, 200, "LOAN"),
 (4, "2021-09-01 10:03:03", true, false, 300, "LOAN"),
 (2, "2021-09-10 09:09:12", true, false, 200, "LOAN"),
 (6, "2021-09-17 24:23:11", true, false, 150.50, "LOAN"),
 (7, "2021-09-22 21:21:23", true, false, 340, "LOAN"),
 (8, "2021-10-02 23:45:12", true, false, 240.50, "LOAN");
-
-
-
-
-
 
 
 -- Query Tasks
@@ -364,11 +359,25 @@ INNER JOIN loan l ON a.account_id = l.account_id
 WHERE l.monthly_due_day <= 7;
 
 /* (2) Extract all bank transactions that were made in the past 5 days (please include customer
-and account details). THIS TASK I HAVE CHOOSEN TO MAKE AS A PROCEDURE. */
+and account details). */
+/* THIS TASK I HAVE CHOOSEN TO MAKE AS A PROCEDURE, user can enter a date and,
+it will show transactions from any account in prvious 5 days from that date.*/
+DROP PROCEDURE IF EXISTS find_transactions_past_5_days;
 
-DROP PROCEDURE IF EXISTS find_transactions_past_5_days();
 DELIMITER $$
-CREATE PROCEDURE find_transactions_past_5_days(IN DATE )
+    CREATE PROCEDURE find_transactions_past_5_days (IN input_date DATE) 
+        BEGIN
+            SELECT c.*, a.*, t.transaction_date, t.amount, t.transaction_type_id, t.isOutgoing, t.isIncoming
+            FROM customer c
+            INNER JOIN customer_account ca ON c.customer_id = ca.customer_id
+            INNER JOIN account a ON ca.account_id = a.account_id
+            INNER JOIN transaction t ON a.account_id = t.account_id
+            WHERE t.transaction_date >= SUBDATE(input_date, 5) AND t.transaction_date <= input_date
+            ORDER BY t.transaction_date DESC;
+        END $$
+DELIMITER ;
+
+CALL find_transactions_past_5_days ("2021-08-02");
 
 
 
@@ -378,22 +387,33 @@ CREATE PROCEDURE find_transactions_past_5_days(IN DATE )
 
 
 
+ 
 
 
+-- UNCOMMENT THIS ONCE FOUND A ISSUE TO FIX THE ISSUE 
+-- UNCOMMENT THIS ONCE FOUND A ISSUE TO FIX THE ISSUE 
+-- UNCOMMENT THIS ONCE FOUND A ISSUE TO FIX THE ISSUE 
 
 
 -- DCL (Data Control Language) QUERIES 
 -- Creating users and setting permissions
 -- Set users and grant permissions
 -- We have 1 read/write user and 1 read user
-CREATE USER IF NOT EXISTS 'admin'@'localhost' IDENTIFIED BY 'AdminUser#2021'; -- Set secure passwords
+
+/*
+
+
+CREATE USER IF NOT EXISTS 'admin'@'localhost' IDENTIFIED BY 'AdminUser#Bank'; 
 GRANT SELECT, INSERT, UPDATE, DELETE, INDEX, CREATE, ALTER 
 	ON bank_assignment TO 'admin'@'localhost';
 
-CREATE USER IF NOT EXISTS 'read'@'localhost' IDENTIFIED BY 'ReadUser#2021';
+CREATE USER IF NOT EXISTS 'read'@'localhost' IDENTIFIED BY 'ReadUser#Bank';
 GRANT SELECT
-	ON bank_assignment.* TO 'read'@'localhost'; /* grant to all tables */
+	ON bank_assignment.* TO 'read'@'localhost'; 
 
--- Show all privileges users have been given
+
 SHOW GRANTS FOR 'admin'@'localhost';
 SHOW GRANTS FOR 'read'@'localhost';
+
+
+*/
