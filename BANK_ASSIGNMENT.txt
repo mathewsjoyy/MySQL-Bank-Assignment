@@ -1,10 +1,10 @@
-/* DDL (Data Definition Language) QUERIES */
-/* Create database and tables */
+-- DDL (Data Definition Language) QUERIES
+-- Create database and tables
 
-/* Removes database called 'BankProcess' if it already has been made.*/
+-- Removes database called 'BankProcess' if it already has been made.
 DROP DATABASE IF EXISTS bank_assignment;
 
-/*Create database called 'BankProcess' and use as the default (current) database for subsequent statements.*/
+-- Create database called 'BankProcess' and use as the default (current) database for subsequent statements.
 CREATE DATABASE bank_assignment;
 USE bank_assignment;
 
@@ -264,7 +264,7 @@ VALUES
 (4, "CURRENTACC", 700, 76587654, 553300,"2020-06-09", 33),
 (5, "SAVINGSACC", 2000.50, 65767545, 553300,"2020-09-03" , 33),
 (6, "CURRENTACC", 850, 87676542, 553300,"2020-11-22", 33),
-(7, "JOINTACC", 1500, 8765675, 553300,"2021-02-11", 33),
+(7, "JOINTACC", 1500, 87656759, 553300,"2021-02-11", 33),
 (8, "CURRENTACC", 80, 90876875, 551100,"2021-04-15", 11),
 (9, "CURRENTACC", 150, 87878659, 552200,"2021-06-17", 22),
 (10, "CURRENTACC", 500, 38276574, 553300,"2021-10-21", 33);
@@ -304,48 +304,81 @@ VALUES
 
 INSERT INTO transaction (account_id, transaction_date, isOutgoing, isIncoming, amount, transaction_type_id)
 VALUES
-(1, "2020-01-20", false, true, 500, "DEPOSIT"),
-(1, "2020-01-20", true, false, 5.25, "PAYMENT"),
-(1, "2020-01-21", false, true, 1500, "TRANSFER"),
-(1, "2020-01-22", false, true, 300, "DEPOSIT"),
-(1, "2020-01-23", true, false, 3.22, "PAYMENT"),
-(1, "2020-02-01", true, false, 40, "WITHDRAWAL"),
-(1, "2020-02-03", false, true, 3500, "DIRECTDEPOSIT"),
-(1, "2020-02-06", true, false, 2.55, "PAYMENT"),
-(1, "2020-02-09", true, false, 0.85, "PAYMENT"),
-(1, "2020-02-13", true, false, 6.90, "PAYMENT"),
-(2, "2020-02-14", false, true, 800, "DEPOSIT"),
-(2, "2020-02-14", false, true, 250, "DIRECTDEPOSIT"),
-(2, "2020-02-15", false, true, 50, "DEPOSIT"),
-(2, "2020-02-16", true, false, 15.90, "PAYMENT"),
-(3, "2020-05-17", false, true, 650.90, "DEPOSIT"),
-(2, "2020-02-19", true, false, 0.99, "FEE"),
-(2, "2020-02-22", true, false, 10, "WITHDRAWAL"),
-(2, "2020-02-23", true, false, 4.50, "PAYMENT"),
-(2, "2020-02-27", true, false, 0.50, "FEE"),
-(4, "2020-06-09", false, true, 700, "DEPOSIT"),
-(4, "2020-06-12", true, false, 5.25, "PAYMENT"),
-(4, "2020-06-13", true, false, 2.30, "PAYMENT"),
-(4, "2020-06-23", true, false, 12.45, "PAYMENT"),
-(4, "2020-06-25", true, false, 40.00, "WITHDRAWAL"),
-(4, "2020-06-27", false, true, 100.75, "DIRECTDEPOSIT"),
-(4, "2020-06-29", true, false, 0.99, "PAYMENT"),
-(4, "2020-06-29", true, false, 1.25, "FEE"),
-(5, "2020-09-03", false, true, 2000.50, "DEPOSIT"),
-(6, "2020-11-22", false, true, 850, "DEPOSIT"),
-(7, "2021-02-11", false, true, 1500, "DEPOSIT"),
-(8, "2021-04-15", false, true, 80, "DEPOSIT"),
-(9, "2021-06-17", false, true, 150, "DEPOSIT"),
-(10, "2021-10-21", false, true, 500, "DEPOSIT"),
-(4, "2021-07-18", true, false, 300, "LOAN"),
-(6, "2021-08-01", true, false, 150.50, "LOAN"),
-(4, "2021-08-01", true, false, 300, "LOAN"),
-(2, "2021-08-25", true, false, 200, "LOAN"),
-(4, "2021-09-01", true, false, 300, "LOAN"),
-(2, "2021-09-10", true, false, 200, "LOAN"),
-(6, "2021-09-17", true, false, 150.50, "LOAN"),
-(7, "2021-09-22", true, false, 340, "LOAN"),
-(8, "2021-10-02", true, false, 240.50, "LOAN");
+(1, "2020-01-20 13:08:22", false, true, 500, "DEPOSIT"),
+(1, "2020-01-20 16:03:23", true, false, 5.25, "PAYMENT"),
+(1, "2020-01-21 11:08:30", false, true, 1500, "TRANSFER"),
+(1, "2020-01-22 09:09:10", false, true, 300, "DEPOSIT"),
+(1, "2020-01-23 13:08:55", true, false, 3.22, "PAYMENT"),
+(1, "2020-02-01 18:23:13", true, false, 40, "WITHDRAWAL"),
+(1, "2020-02-03 13:23:34", false, true, 3500, "DIRECTDEPOSIT"),
+(1, "2020-02-06 18:10:43", true, false, 2.55, "PAYMENT"),
+(1, "2020-02-09 22:34:57", true, false, 0.85, "PAYMENT"),
+(1, "2020-02-13 08:55:32", true, false, 6.90, "PAYMENT"),
+(2, "2020-02-14 06:23:12", false, true, 800, "DEPOSIT"),
+(2, "2020-02-14 19:56:17", false, true, 250, "DIRECTDEPOSIT"),
+(2, "2020-02-15 14:09:53", false, true, 50, "DEPOSIT"),
+(2, "2020-02-16 14:08:18", true, false, 15.90, "PAYMENT"),
+(3, "2020-05-17 20:02:22", false, true, 650.90, "DEPOSIT"),
+(2, "2020-02-19 11:11:11", true, false, 0.99, "FEE"),
+(2, "2020-02-22 09:09:11", true, false, 10, "WITHDRAWAL"),
+(2, "2020-02-23 05:08:05", true, false, 4.50, "PAYMENT"),
+(2, "2020-02-27 13:08:25", true, false, 0.50, "FEE"),
+(4, "2020-06-09 17:23:28", false, true, 700, "DEPOSIT"),
+(4, "2020-06-12 07:09:41", true, false, 5.25, "PAYMENT"),
+(4, "2020-06-13 21:57:15", true, false, 2.30, "PAYMENT"),
+(4, "2020-06-23 15:32:34", true, false, 12.45, "PAYMENT"),
+(4, "2020-06-25 20:54:59", true, false, 40.00, "WITHDRAWAL"),
+(4, "2020-06-27 22:08:34", false, true, 100.75, "DIRECTDEPOSIT"),
+(4, "2020-06-29 23:14:12", true, false, 0.99, "PAYMENT"),
+(4, "2020-06-29 09:08:45", true, false, 1.25, "FEE"),
+(5, "2020-09-03 07:04:01", false, true, 2000.50, "DEPOSIT"),
+(6, "2020-11-22 06:23:44", false, true, 850, "DEPOSIT"),
+(7, "2021-02-11 05:21:52", false, true, 1500, "DEPOSIT"),
+(8, "2021-04-15 02:01:01", false, true, 80, "DEPOSIT"),
+(9, "2021-06-17 12:21:22", false, true, 150, "DEPOSIT"),
+(10, "2021-10-21 14:08:33", false, true, 500, "DEPOSIT"),
+(4, "2021-07-18 18:32:57", true, false, 300, "LOAN"),
+(6, "2021-08-01 06:37:39", true, false, 150.50, "LOAN"),
+(4, "2021-08-01 09:10:23", true, false, 300, "LOAN"),
+(2, "2021-08-25 10:56:21", true, false, 200, "LOAN"),
+(4, "2021-09-01 10:03:03", true, false, 300, "LOAN"),
+(2, "2021-09-10 09:09:12", true, false, 200, "LOAN"),
+(6, "2021-09-17 24:23:11", true, false, 150.50, "LOAN"),
+(7, "2021-09-22 21:21:23", true, false, 340, "LOAN"),
+(8, "2021-10-02 23:45:12", true, false, 240.50, "LOAN");
+
+
+
+
+
+
+
+-- Query Tasks
+/* (1) List all bank customers (including their name and account number) who have their loan
+payment due in the first 7 days of the month. */
+SELECT c.first_name, c.last_name, a.account_number
+FROM customer c
+INNER JOIN customer_account ca ON c.customer_id = ca.customer_id
+INNER JOIN account a ON ca.account_id = a.account_id
+INNER JOIN loan l ON a.account_id = l.account_id
+WHERE l.monthly_due_day <= 7;
+
+/* (2) Extract all bank transactions that were made in the past 5 days (please include customer
+and account details). THIS TASK I HAVE CHOOSEN TO MAKE AS A PROCEDURE. */
+
+DROP PROCEDURE IF EXISTS find_transactions_past_5_days();
+DELIMITER $$
+CREATE PROCEDURE find_transactions_past_5_days(IN DATE )
+
+
+
+
+
+
+
+
+
+
 
 
 
