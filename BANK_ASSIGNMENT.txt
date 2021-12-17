@@ -394,25 +394,35 @@ it will show customers who have there current balance greater then 'X'.*/
 DELIMITER $$
 CREATE PROCEDURE find_customers_with_balance_greater_then (IN input_amount DECIMAL(13,2)) 
 BEGIN
-            
-    SELECT subtable.cb current_balance, subtable.ci customer_id, subtable.ai account_id,
-    	   subtable.fn first_name, subtable.ln last_name
-    FROM (
-        SELECT SUM(IF(t.isIncoming, t.amount, 0)) - SUM(IF(t.isOutgoing, t.amount, 0)) cb,
-               c.customer_id ci, a.account_id ai, c.first_name fn, c.last_name ln
-        FROM customer c
-        INNER JOIN customer_account ca ON c.customer_id = ca.customer_id
-        INNER JOIN account a ON ca.account_id = a.account_id
-        INNER JOIN transaction t ON a.account_id = t.account_id
-        GROUP BY a.account_id
-    ) subtable
-    WHERE subtable.cb > input_amount
-    ORDER BY subtable.cb DESC;
+           
+    SELECT SUM(IF(t.isIncoming, t.amount, 0)) - SUM(IF(t.isOutgoing, t.amount, 0)) current_balance,
+           c.customer_id, a.account_id, c.first_name, c.last_name
+    FROM customer c
+    INNER JOIN customer_account ca ON c.customer_id = ca.customer_id
+    INNER JOIN account a ON ca.account_id = a.account_id
+    INNER JOIN transaction t ON a.account_id = t.account_id
+    GROUP BY a.account_id
+    HAVING current_balance > input_amount
+    ORDER BY current_balance DESC;
             
 END $$
 DELIMITER ;
 
 CALL find_customers_with_balance_greater_then (5000);
+
+
+/* (4) The Bank management team often needs to know the "Total Outstandings" of the bank.
+The Total Outstandings is the up-to-date balance over all bank accounts and includes the sum of
+the opening balance of every bank account deducting all outgoing payments and adding all
+incoming payments of every bank account. Write an SQL query to calculate and list the Total
+Outstandings of the bank. */
+
+
+
+
+
+
+
 
 
 
