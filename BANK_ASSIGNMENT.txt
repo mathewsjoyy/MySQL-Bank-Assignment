@@ -14,7 +14,7 @@ CREATE TABLE branch (
     address_id INT NOT NULL, 
     branch_name VARCHAR(50) NOT NULL,
     PRIMARY KEY (branch_id),
-    UNIQUE (address_id), -- We have 2 seperate unqiuesare theyre individually unqiue
+    UNIQUE (address_id), -- We have 2 seperate unqiues as theyre individually unqiue
     UNIQUE (branch_name)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -305,7 +305,6 @@ VALUES
 
 INSERT INTO transaction (account_id, transaction_date, isOutgoing, isIncoming, amount, transaction_type_id)
 VALUES
-(1, "2020-01-20 13:08:22", false, true, 500, "DEPOSIT"),
 (1, "2020-01-20 16:03:23", true, false, 5.25, "PAYMENT"),
 (1, "2020-01-21 11:08:30", false, true, 1500, "TRANSFER"),
 (1, "2020-01-22 09:09:10", false, true, 300, "DEPOSIT"),
@@ -315,16 +314,13 @@ VALUES
 (1, "2020-02-06 18:10:43", true, false, 2.55, "PAYMENT"),
 (1, "2020-02-09 22:34:57", true, false, 0.85, "PAYMENT"),
 (1, "2020-02-13 08:55:32", true, false, 6.90, "PAYMENT"),
-(2, "2020-02-14 06:23:12", false, true, 800, "DEPOSIT"),
 (2, "2020-02-14 19:56:17", false, true, 250, "DIRECTDEPOSIT"),
 (2, "2020-02-15 14:09:53", false, true, 50, "DEPOSIT"),
 (2, "2020-02-16 14:08:18", true, false, 15.90, "PAYMENT"),
-(3, "2020-05-17 20:02:22", false, true, 650.90, "DEPOSIT"),
 (2, "2020-02-19 11:11:11", true, false, 0.99, "FEE"),
 (2, "2020-02-22 09:09:11", true, false, 10, "WITHDRAWAL"),
 (2, "2020-02-23 05:08:05", true, false, 4.50, "PAYMENT"),
 (2, "2020-02-27 13:08:25", true, false, 0.50, "FEE"),
-(4, "2020-06-09 17:23:28", false, true, 700, "DEPOSIT"),
 (4, "2020-06-12 07:09:41", true, false, 5.25, "PAYMENT"),
 (4, "2020-06-13 21:57:15", true, false, 2.30, "PAYMENT"),
 (4, "2020-06-23 15:32:34", true, false, 12.45, "PAYMENT"),
@@ -332,13 +328,7 @@ VALUES
 (4, "2020-06-27 22:08:34", false, true, 100.75, "DIRECTDEPOSIT"),
 (4, "2020-06-29 23:14:12", true, false, 0.99, "PAYMENT"),
 (4, "2020-06-29 09:08:45", true, false, 1.25, "FEE"),
-(5, "2020-09-03 07:04:01", false, true, 2000.50, "DEPOSIT"),
-(6, "2020-11-22 06:23:44", false, true, 850, "DEPOSIT"),
-(7, "2021-02-11 05:21:52", false, true, 1500, "DEPOSIT"),
-(8, "2021-04-15 02:01:01", false, true, 80, "DEPOSIT"),	
-(8, "2021-04-16 21:03:07", false, true, 185, "DIRECTDEPOSIT"),	
-(9, "2021-06-17 12:21:22", false, true, 150, "DEPOSIT"),             
-(10, "2021-10-21 14:08:33", false, true, 500, "DEPOSIT"),
+(8, "2021-04-16 21:03:07", false, true, 185, "DIRECTDEPOSIT"),	             
 (4, "2021-07-18 18:32:57", true, false, 300, "LOAN"),
 (4, "2021-07-19 20:10:45", false, true, 920, "TRANSFER"),   
 (6, "2021-08-01 06:37:39", true, false, 150.50, "LOAN"),	
@@ -395,7 +385,7 @@ DELIMITER $$
 CREATE PROCEDURE find_customers_with_balance_greater_then (IN input_amount DECIMAL(13,2)) 
 BEGIN
            
-    SELECT SUM(IF(t.isIncoming, t.amount, 0)) - SUM(IF(t.isOutgoing, t.amount, 0)) current_balance,
+    SELECT a.opening_balance + SUM(IF(t.isIncoming, t.amount, 0)) - SUM(IF(t.isOutgoing, t.amount, 0)) current_balance,
            c.customer_id, a.account_id, c.first_name, c.last_name
     FROM customer c
     INNER JOIN customer_account ca ON c.customer_id = ca.customer_id
@@ -417,10 +407,15 @@ the opening balance of every bank account deducting all outgoing payments and ad
 incoming payments of every bank account. Write an SQL query to calculate and list the Total
 Outstandings of the bank. */
 
-
-
-
-
+SELECT 
+	SUM(a.opening_balance) 
+	+
+    (SELECT SUM(amount)
+    FROM transaction WHERE isIncoming = true)
+    - 
+    (SELECT SUM(Amount) 
+    FROM transaction WHERE isOutgoing = true) total_outstanding
+FROM account a;
 
 
 
