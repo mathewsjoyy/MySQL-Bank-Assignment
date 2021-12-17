@@ -2,11 +2,11 @@
 -- Create database and tables
 
 -- Removes database called 'BankProcess' if it already has been made.
-DROP DATABASE IF EXISTS bank_assignment;
+DROP DATABASE IF EXISTS bank;
 
 -- Create database called 'BankProcess' and use as the default (current) database for subsequent statements.
-CREATE DATABASE bank_assignment;
-USE bank_assignment;
+CREATE DATABASE bank;
+USE bank;
 
 
 CREATE TABLE branch (
@@ -16,7 +16,7 @@ CREATE TABLE branch (
     PRIMARY KEY (branch_id),
     UNIQUE (address_id), -- We have 2 seperate unqiuesare theyre individually unqiue
     UNIQUE (branch_name)
-)ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE customer (
     customer_id INT AUTO_INCREMENT,
@@ -26,7 +26,7 @@ CREATE TABLE customer (
     email VARCHAR(255) NOT NULL,
     PRIMARY KEY (customer_id),
     UNIQUE (email)
-)ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE customer_account ( -- Junction table for many-many relation (join accounts)
 	customer_id INT,
@@ -45,7 +45,7 @@ CREATE TABLE account (
     branch_id INT NOT NULL,
     PRIMARY KEY (account_id),
     UNIQUE(sort_code, account_number)
-)ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1; 
+)ENGINE=InnoDB DEFAULT CHARSET=utf8; 
 
 CREATE TABLE account_type (
 	account_type_id VARCHAR(15),
@@ -69,7 +69,7 @@ CREATE TABLE address (
     city VARCHAR(50) NOT NULL,
     PRIMARY KEY (address_id),
     INDEX(postal_code)
-)ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE transaction (
 	transaction_id INT AUTO_INCREMENT,
@@ -80,7 +80,7 @@ CREATE TABLE transaction (
     amount DECIMAL(13,2) NOT NULL DEFAULT 0,
     transaction_type_id VARCHAR(15) NOT NULL,
     PRIMARY KEY (transaction_id)
-)ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE transaction_type (
 	transaction_type_id VARCHAR(15),
@@ -97,7 +97,7 @@ CREATE TABLE loan (
     first_payment DATE NOT NULL,
     monthly_due_day INT(2) NOT NULL,
     PRIMARY KEY (loan_id)
-)ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE contact_number (
     contact_id INT AUTO_INCREMENT,
@@ -105,7 +105,7 @@ CREATE TABLE contact_number (
     country_code VARCHAR(6),
     type ENUM('landline','mobile') NOT NULL,
     PRIMARY KEY (contact_id)
-)ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE customer_contact_number (
 	customer_id INT,
@@ -335,7 +335,8 @@ VALUES
 (5, "2020-09-03 07:04:01", false, true, 2000.50, "DEPOSIT"),
 (6, "2020-11-22 06:23:44", false, true, 850, "DEPOSIT"),
 (7, "2021-02-11 05:21:52", false, true, 1500, "DEPOSIT"),
-(8, "2021-04-15 02:01:01", false, true, 80, "DEPOSIT"),			
+(8, "2021-04-15 02:01:01", false, true, 80, "DEPOSIT"),	
+(8, "2021-04-16 21:03:07", false, true, 185, "DIRECTDEPOSIT"),	
 (9, "2021-06-17 12:21:22", false, true, 150, "DEPOSIT"),             
 (10, "2021-10-21 14:08:33", false, true, 500, "DEPOSIT"),
 (4, "2021-07-18 18:32:57", true, false, 300, "LOAN"),
@@ -348,7 +349,6 @@ VALUES
 (6, "2021-09-17 21:23:11", true, false, 150.50, "LOAN"),
 (7, "2021-09-22 21:21:23", true, false, 340, "LOAN"),
 (8, "2021-10-02 23:45:12", true, false, 240.50, "LOAN");
-
 
 
 -- Query Tasks
@@ -365,19 +365,20 @@ WHERE l.monthly_due_day <= 7;
 and account details). */
 /* THIS TASK I HAVE CHOOSEN TO MAKE AS A PROCEDURE, user can enter a date and,
 it will show transactions from any account in prvious 5 days from that date.*/
-DROP PROCEDURE IF EXISTS find_transactions_past_5_days;
 
 DELIMITER $$
-    CREATE PROCEDURE find_transactions_past_5_days (IN input_date DATE) 
-        BEGIN
-            SELECT c.*, a.*, t.transaction_date, t.amount, t.transaction_type_id, t.isOutgoing, t.isIncoming
-            FROM customer c
-            INNER JOIN customer_account ca ON c.customer_id = ca.customer_id
-            INNER JOIN account a ON ca.account_id = a.account_id
-            INNER JOIN transaction t ON a.account_id = t.account_id
-            WHERE t.transaction_date >= SUBDATE(input_date, 5) AND t.transaction_date <= input_date
-            ORDER BY t.transaction_date DESC;
-        END $$
+CREATE PROCEDURE find_transactions_past_5_days (IN input_date DATE) 
+BEGIN
+
+    SELECT c.*, a.*, t.transaction_date, t.amount, t.transaction_type_id, t.isOutgoing, t.isIncoming
+    FROM customer c
+    INNER JOIN customer_account ca ON c.customer_id = ca.customer_id
+    INNER JOIN account a ON ca.account_id = a.account_id
+    INNER JOIN transaction t ON a.account_id = t.account_id
+    WHERE t.transaction_date >= SUBDATE(input_date, 5) AND t.transaction_date <= input_date
+    ORDER BY t.transaction_date DESC;
+    
+END $$
 DELIMITER ;
 
 CALL find_transactions_past_5_days ("2020-06-13");
@@ -389,44 +390,29 @@ summing the opening balance of the account, all the incoming transactions of the
 deducting the outgoing transactions of the account. */
 /* THIS TASK I HAVE CHOOSEN TO MAKE AS A PROCEDURE, user can enter an amount 'X' and,
 it will show customers who have there current balance greater then 'X'.*/
-DROP PROCEDURE IF EXISTS find_customers_with_balance_greater_then;
 
 DELIMITER $$
-    CREATE PROCEDURE find_customers_with_balance_greater_then (IN input_amount DECIMAL(13,2)) 
-        BEGIN
-        	
+CREATE PROCEDURE find_customers_with_balance_greater_then (IN input_amount DECIMAL(13,2)) 
+BEGIN
             
-            SELECT a.account_id, SUM(IF(t.isIncoming, t.amount, 0)) - SUM(IF(t.isOutgoing, t.amount, 0)) current_balance
-            FROM customer c
-            INNER JOIN customer_account ca ON c.customer_id = ca.customer_id
-            INNER JOIN account a ON ca.account_id = a.account_id
-            INNER JOIN transaction t ON a.account_id = t.account_id
-            GROUP BY a.account_id
-            ORDER BY current_balance DESC;
+    SELECT subtable.cb current_balance, subtable.ci customer_id, subtable.ai account_id,
+    	   subtable.fn first_name, subtable.ln last_name
+    FROM (
+        SELECT SUM(IF(t.isIncoming, t.amount, 0)) - SUM(IF(t.isOutgoing, t.amount, 0)) cb,
+               c.customer_id ci, a.account_id ai, c.first_name fn, c.last_name ln
+        FROM customer c
+        INNER JOIN customer_account ca ON c.customer_id = ca.customer_id
+        INNER JOIN account a ON ca.account_id = a.account_id
+        INNER JOIN transaction t ON a.account_id = t.account_id
+        GROUP BY a.account_id
+    ) subtable
+    WHERE subtable.cb > input_amount
+    ORDER BY subtable.cb DESC;
             
-            
-            /* Probably think about making this into a view
-            SELECT cb.current_balance, cb.ci customer_id, cb.ai account_id
-            FROM (
-                SELECT (a.opening_balance + SUM(IF(t.isIncoming, t.amount, 0))) - SUM(IF(t.isOutgoing, t.amount, 0)) current_balance, c.customer_id ci, a.account_id ai
-                FROM customer c
-                INNER JOIN customer_account ca ON c.customer_id = ca.customer_id
-                INNER JOIN account a ON ca.account_id = a.account_id
-                INNER JOIN transaction t ON a.account_id = t.account_id
-                GROUP BY a.account_id;
-            ) as cb
-            WHERE cb.current_balance > input_amount;
-            */
-            
-            
-        END $$
+END $$
 DELIMITER ;
 
 CALL find_customers_with_balance_greater_then (5000);
-
-
-
-
 
 
 
@@ -435,7 +421,6 @@ CALL find_customers_with_balance_greater_then (5000);
 -- Creating a read only user to limit database access and increase security.
 
 -- FIND WHY THIS CAUSING THE ERROR
-
 /*
 DROP USER IF EXISTS 'readonly'@'localhost';
 CREATE USER 'readonly'@'localhost' IDENTIFIED BY 'Readonly1934@';
