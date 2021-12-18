@@ -1,14 +1,14 @@
 -- DDL (Data Definition Language) QUERIES
--- Create database and tables
+-- Create database
 
--- Removes database called 'BankProcess' if it already has been made.
+-- Removes database called 'bank' if it already has been made.
 DROP DATABASE IF EXISTS bank;
 
--- Create database called 'BankProcess' and use as the default (current) database for subsequent statements.
+-- Create database called 'bank' and use as the default (current) database for subsequent statements.
 CREATE DATABASE bank;
 USE bank;
 
-
+-- Creating the neccessary tables
 CREATE TABLE branch (
 	branch_id INT AUTO_INCREMENT,
     address_id INT NOT NULL, 
@@ -116,11 +116,13 @@ CREATE TABLE customer_contact_number (
 
 /* Add foreign keys and any neccessary constraints. */
 /* KEY : fk_[referencing table name]_[referenced table name]_[referencing field name]. */
+-- Add the constraints after the table creation, to avoid confliction and also to have the 
+-- ability to give each constraint a indentifer to be able to change them later if needed.
 ALTER TABLE account ADD CONSTRAINT fk_account_branch_branch_id
 FOREIGN KEY (branch_id) REFERENCES branch(branch_id)
-ON DELETE CASCADE ON UPDATE CASCADE; -- DOUBLE CHECK IF THIS IS CORRECT VALID OPTION TO USE (also for the ones below)
+ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE account ADD CONSTRAINT fk_account_account_types_account_type_id
+ALTER TABLE account ADD CONSTRAINT fk_account_account_type_account_type_id
 FOREIGN KEY (account_type_id) REFERENCES account_type(account_type_id)
 ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -156,7 +158,7 @@ ALTER TABLE transaction ADD CONSTRAINT fk_transaction_account_account_id
 FOREIGN KEY (account_id) REFERENCES account(account_id)
 ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE transaction ADD CONSTRAINT fk_transaction_transaction_types_transaction_type_id
+ALTER TABLE transaction ADD CONSTRAINT fk_transaction_transaction_type_transaction_type_id
 FOREIGN KEY (transaction_type_id) REFERENCES transaction_type(transaction_type_id)
 ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -185,7 +187,8 @@ VALUES
 (7, "1 Victoria Street", NULL, "UB24 8GY", "Greater London", "Southhall"),
 (8, "61 North Street", NULL, "HA72 6ML", "Middlesex", "Harrow"),
 (9, "52 The Avenue", NULL, "NG23 2MO", "Nottinghamshire", "Nottingham"),
-(10, "78 Queen Street", NULL, "M1 1AD", "Greater Manchester", "Manchester");
+(10, "78 Queen Street", NULL, "M1 1AD", "Greater Manchester", "Manchester"),
+(11, "14 potter bridge house", NULL, "LN2 2BA", "Lincolnshire", "Lincoln");
 
 INSERT INTO customer (customer_id, first_name, last_name, date_of_birth, email)
 VALUES
@@ -202,7 +205,7 @@ VALUES
 
 INSERT INTO customer_address (customer_id, address_id)
 VALUES
-(1,3),
+(1,11),
 (2,6),
 (3,7),
 (4,4),
@@ -210,7 +213,7 @@ VALUES
 (6,8),
 (7,10),
 (8,9),
-(9,3),
+(9,11),
 (10,4);
     
 INSERT INTO contact_number (contact_id, number, country_code, type)
@@ -342,20 +345,22 @@ VALUES
 
 
 -- Query Tasks
-/* (1) List all bank customers (including their name and account number) who have their loan
-payment due in the first 7 days of the month. */
-SELECT c.first_name, c.last_name, a.account_number
+
+-- (1) List all bank customers who have their loan payment due in the first 7 days of the month.
+-- Using joins to be able to combine records from multiple tables and link forgein key relations
+SELECT c.first_name, c.last_name, c.customer_id, a.account_number, a.account_type_id
 FROM customer c
 INNER JOIN customer_account ca ON c.customer_id = ca.customer_id
 INNER JOIN account a ON ca.account_id = a.account_id
 INNER JOIN loan l ON a.account_id = l.account_id
 WHERE l.monthly_due_day <= 7;
 
-/* (2) Extract all bank transactions that were made in the past 5 days (please include customer
-and account details). */
-/* THIS TASK I HAVE CHOOSEN TO MAKE AS A PROCEDURE, user can enter a date and,
+
+-- (2) Extract all bank transactions that were made in the past 5 days.
+/* I have choosen to this task as a stored procedure. The user can enter a date and,
 it will show transactions from any account in prvious 5 days from that date.*/
 
+-- Define a DELIMITER to tell the mysql client to treat stored procedure as an entire statement.
 DELIMITER $$
 CREATE PROCEDURE find_transactions_past_5_days (IN input_date DATE) 
 BEGIN
@@ -365,33 +370,33 @@ BEGIN
     INNER JOIN customer_account ca ON c.customer_id = ca.customer_id
     INNER JOIN account a ON ca.account_id = a.account_id
     INNER JOIN transaction t ON a.account_id = t.account_id
-    WHERE t.transaction_date >= SUBDATE(input_date, 5) AND t.transaction_date <= input_date
+    WHERE t.transaction_date >= SUBDATE(input_date, 5) -- SUBDATE minuses X days (5) to a Y date (input_date)
+    	  AND t.transaction_date <= input_date
     ORDER BY t.transaction_date DESC;
     
 END $$
 DELIMITER ;
 
-CALL find_transactions_past_5_days ("2020-06-13");
+-- Calling the above procedure, giving a valid argument
+CALL find_transactions_past_5_days ("2020-06-14");
 
 
-/* (3) 4.3. List the customers with their current balance greater than £5000 (at least 1 customer
-should have their current balance greater than £5000). The current balance can be calculated by
-summing the opening balance of the account, all the incoming transactions of the account, and
-deducting the outgoing transactions of the account. */
-/* THIS TASK I HAVE CHOOSEN TO MAKE AS A PROCEDURE, user can enter an amount 'X' and,
-it will show customers who have there current balance greater then 'X'.*/
+-- (3) 4.3. List the customers with their current balance greater than £5000. 
+/* This task I have done as a stored procedure. The user can enter an amount X and,
+it will show customers who have there current balance greater then X.*/
 
 DELIMITER $$
 CREATE PROCEDURE find_customers_with_balance_greater_then (IN input_amount DECIMAL(13,2)) 
 BEGIN
-           
+    
+    -- Add an account opening balance, plus all incoming transaction and minus all outgoing
     SELECT a.opening_balance + SUM(IF(t.isIncoming, t.amount, 0)) - SUM(IF(t.isOutgoing, t.amount, 0)) current_balance,
            c.customer_id, a.account_id, c.first_name, c.last_name
     FROM customer c
     INNER JOIN customer_account ca ON c.customer_id = ca.customer_id
     INNER JOIN account a ON ca.account_id = a.account_id
     INNER JOIN transaction t ON a.account_id = t.account_id
-    GROUP BY a.account_id
+    GROUP BY a.account_id -- Group by account_id, so not all transaction for all accounts are added / minused
     HAVING current_balance > input_amount
     ORDER BY current_balance DESC;
             
@@ -402,32 +407,29 @@ CALL find_customers_with_balance_greater_then (5000);
 
 
 /* (4) The Bank management team often needs to know the "Total Outstandings" of the bank.
-The Total Outstandings is the up-to-date balance over all bank accounts and includes the sum of
-the opening balance of every bank account deducting all outgoing payments and adding all
-incoming payments of every bank account. Write an SQL query to calculate and list the Total
-Outstandings of the bank. */
+The Total Outstandings is the up-to-date balance over all bank accounts. */
 
+/* We can achieve this easier with subqueries, a join is not needed and might hurt 
+logical readability, for this particular statement. */
 SELECT 
-	SUM(a.opening_balance) 
+	SUM(a.opening_balance) -- Sum all accounts opening balance,
 	+
-    (SELECT SUM(amount)
-    FROM transaction WHERE isIncoming = true)
+    (SELECT SUM(amount) -- Add sum of all accounts incoming money
+    FROM transaction WHERE isIncoming)
     - 
-    (SELECT SUM(Amount) 
-    FROM transaction WHERE isOutgoing = true) total_outstanding
+    (SELECT SUM(Amount) -- Minus sum off all accounts outgoing money
+    FROM transaction WHERE isOutgoing) total_outstanding -- Call the result 'total_outstanding'
 FROM account a;
-
-
-
 
 
 -- DCL (Data Control Language) QUERIES 
 -- Creating user and setting permissions
 -- Creating a read only user to limit database access and increase security.
 
--- FIND WHY THIS CAUSING THE ERROR
 /*
 DROP USER IF EXISTS 'readonly'@'localhost';
 CREATE USER 'readonly'@'localhost' IDENTIFIED BY 'Readonly1934@';
 GRANT SELECT ON bank_assignment.* TO 'readonly'@'localhost';
+
+SHOW GRANTS FOR 'readonly'@'localhost';
 */
