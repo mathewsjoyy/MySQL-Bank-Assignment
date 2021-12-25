@@ -431,5 +431,7 @@ DROP USER IF EXISTS 'readonly'@'localhost';
 CREATE USER 'readonly'@'localhost' IDENTIFIED BY 'Readonly1934@';
 GRANT SELECT ON bank_assignment.* TO 'readonly'@'localhost';
 
-SHOW GRANTS FOR 'readonly'@'localhost';
+DROP USER IF EXISTS 'admin'@'localhost';
+CREATE USER 'admin'@'localhost' IDENTIFIED BY 'Admin176253@';
+GRANT SELECT, INSERT, UPDATE, DELETE, INDEX, CREATE, ALTER ON bank_assignment.* TO 'admin'@'localhost';
 */
