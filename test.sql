@@ -40,7 +40,7 @@ CREATE TABLE account (
     opening_balance DECIMAL(13,2) NOT NULL DEFAULT 51,
     account_number INT(8) NOT NULL,
     sort_code INT(6) NOT NULL,
-    created_date DATETIME NOT NULL DEFAULT NOW(),
+    created_date DATE NOT NULL DEFAULT now(),
     branch_id INT NOT NULL,
     PRIMARY KEY (account_id),
     UNIQUE(sort_code, account_number)
@@ -48,7 +48,7 @@ CREATE TABLE account (
 
 CREATE TABLE account_type (
 	account_type_id VARCHAR(15),
-    description VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
     PRIMARY KEY (account_type_id),
     UNIQUE(description)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -83,7 +83,7 @@ CREATE TABLE transaction (
 
 CREATE TABLE transaction_type (
 	transaction_type_id VARCHAR(15),
-    description VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
     PRIMARY KEY (transaction_type_id),
     UNIQUE(description)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
