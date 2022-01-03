@@ -13,7 +13,7 @@ CREATE TABLE branch (
     address_id INT NOT NULL, 
     branch_name VARCHAR(50) NOT NULL,
     PRIMARY KEY (branch_id),
-    UNIQUE (address_id), -- We have 2 seperate unqiues as theyre individually unqiue
+    UNIQUE (address_id), -- We have 2 seperate unqiues as they're individually unqiue
     UNIQUE (branch_name)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -27,7 +27,7 @@ CREATE TABLE customer (
     UNIQUE (email)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE customer_account ( -- Junction table for many-many relation (join accounts)
+CREATE TABLE customer_account (
 	customer_id INT,
     account_id INT,
     PRIMARY KEY (customer_id, account_id) -- Composite key
@@ -76,7 +76,7 @@ CREATE TABLE transaction (
     transaction_date DATETIME NOT NULL DEFAULT now(),
     isOutgoing BOOLEAN NOT NULL DEFAULT FALSE,
     isIncoming BOOLEAN NOT NULL DEFAULT FALSE,
-    amount DECIMAL(13,2) NOT NULL DEFAULT 0,
+    amount DECIMAL(13,2) NOT NULL,
     transaction_type_id VARCHAR(15) NOT NULL,
     PRIMARY KEY (transaction_id)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -169,6 +169,9 @@ ON DELETE CASCADE ON UPDATE CASCADE;
 -- Check on accounts table to make sure opening balance is greater then 50
 ALTER TABLE account ADD CONSTRAINT ob_greater CHECK (opening_balance > 50);
 
+-- Check on transaction table so you can't have a less then 0 transaction amount
+ALTER TABLE transaction ADD CONSTRAINT amount_greater CHECK (amount > 0);
+
 -- Check transactions table to ensure a transaction isnt both incoming and outgoing
 ALTER TABLE transaction ADD CONSTRAINT valid_transaction CHECK ((isOutgoing = true AND isIncoming = false) OR
                                                                (isOutgoing = false AND isIncoming = true));
@@ -256,7 +259,6 @@ VALUES
 ("SAVINGSACC", "With a saving account you pay money into and earn interest from."),
 ("JOINTACC", "A joint account is a simple way for two people to share access to the same bank account creating one monthly statement.");
 
--- For the accounts table...
 /* the bank code and bank branch code is encoded into the sort number, e.g. the format of the sort code is XXYYZZ where XX = 55 (the bank code for our bank),
 YY and ZZ = branch id. The account number is just a random set of 8 characters.*/
 INSERT INTO account (account_id, account_type_id, opening_balance, account_number, sort_code, created_date, branch_id)
@@ -355,8 +357,8 @@ INNER JOIN loan l ON a.account_id = l.account_id
 WHERE l.monthly_due_day <= 7;
 
 
--- Create view to have a temporary table of customer account and transaction data we can use for further queries
-CREATE VIEW customer_account_transaction_details 
+-- Create view to have a virtual table of customer account and transaction data we can use for further queries
+CREATE VIEW IF NOT EXISTS customer_account_transaction_details 
 AS
 SELECT t.*, c.customer_id, c.first_name, c.last_name, c.date_of_birth, c.email, a.account_type_id,
     a.is_active, a.opening_balance, a.account_number, a.sort_code, a.created_date, a.branch_id
@@ -381,7 +383,7 @@ ORDER BY transaction_date DESC;
 -- Stored procedure version
 -- Define a DELIMITER to tell the mysql client to treat stored procedure as an entire statement.
 DELIMITER $$
-CREATE PROCEDURE find_transactions_past_5_days(IN input_date DATE) 
+CREATE PROCEDURE IF NOT EXISTS find_transactions_past_5_days(IN input_date DATE) 
 BEGIN
 
     SELECT customer_id , account_id, transaction_date, amount, transaction_type_id, isOutgoing, isIncoming
@@ -411,7 +413,7 @@ ORDER BY current_balance DESC;
 
 -- Stored procedure version
 DELIMITER $$
-CREATE PROCEDURE find_customers_with_balance_greater_then(IN input_amount DECIMAL(13,2)) 
+CREATE PROCEDURE IF NOT EXISTS find_customers_with_balance_greater_then(IN input_amount DECIMAL(13,2)) 
 BEGIN
     
     SELECT opening_balance + SUM(IF(isIncoming, amount, 0)) - SUM(IF(isOutgoing, amount, 0)) current_balance,
