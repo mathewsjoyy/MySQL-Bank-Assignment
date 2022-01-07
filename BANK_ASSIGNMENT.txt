@@ -350,10 +350,10 @@ VALUES
 -- (1) List all bank customers who have their loan payment due in the first 7 days of the month.
 -- Using joins to be able to combine records from multiple tables and link forgein key relations
 SELECT c.first_name, c.last_name, c.customer_id, a.account_number, a.account_type_id
-FROM customer c
-INNER JOIN customer_account ca ON c.customer_id = ca.customer_id
-INNER JOIN account a ON ca.account_id = a.account_id
-INNER JOIN loan l ON a.account_id = l.account_id
+FROM customer AS c
+INNER JOIN customer_account AS ca ON c.customer_id = ca.customer_id
+INNER JOIN account AS a ON ca.account_id = a.account_id
+INNER JOIN loan AS l ON a.account_id = l.account_id
 WHERE l.monthly_due_day <= 7;
 
 
@@ -362,10 +362,10 @@ CREATE VIEW IF NOT EXISTS customer_account_transaction_details
 AS
 SELECT t.*, c.customer_id, c.first_name, c.last_name, c.date_of_birth, c.email, a.account_type_id,
     a.is_active, a.opening_balance, a.account_number, a.sort_code, a.created_date, a.branch_id
-FROM customer c
-INNER JOIN customer_account ca ON c.customer_id = ca.customer_id
-INNER JOIN account a ON ca.account_id = a.account_id
-INNER JOIN transaction t ON a.account_id = t.account_id;
+FROM customer AS c
+INNER JOIN customer_account AS ca ON c.customer_id = ca.customer_id
+INNER JOIN account AS a ON ca.account_id = a.account_id
+INNER JOIN transaction AS t ON a.account_id = t.account_id;
 
 
 -- (2) Extract all bank transactions that were made in the past 5 days.
@@ -374,7 +374,7 @@ it will show transactions from any account in previous 5 days from that date.*/
 
 SET @current_date := CURDATE(); -- Get the current date and store in a variable
 
-SELECT customer_id , account_id, transaction_date, amount, transaction_type_id, isOutgoing, isIncoming
+SELECT customer_id, account_id, transaction_date, amount, transaction_type_id, isOutgoing, isIncoming
 FROM customer_account_transaction_details -- Use view we created earlier
 WHERE transaction_date >= SUBDATE(@current_date, 5) -- SUBDATE minuses X days (5) to a Y date
       AND transaction_date <= @current_date
@@ -404,7 +404,7 @@ CALL find_transactions_past_5_days("2020-06-14");
 it will show customers who have there current balance greater then X.*/
 
 -- Add an account opening balance, plus all incoming transaction and minus all outgoing
-SELECT opening_balance + SUM(IF(isIncoming, amount, 0)) - SUM(IF(isOutgoing, amount, 0)) current_balance,
+SELECT opening_balance + SUM(IF(isIncoming, amount, 0)) - SUM(IF(isOutgoing, amount, 0)) AS current_balance,
        customer_id, account_id, first_name, last_name
 FROM customer_account_transaction_details
 GROUP BY account_id -- Group by account_id, so not all transaction for all accounts are added / minused
@@ -415,14 +415,14 @@ ORDER BY current_balance DESC;
 DELIMITER $$
 CREATE PROCEDURE IF NOT EXISTS find_customers_with_balance_greater_then(IN input_amount DECIMAL(13,2)) 
 BEGIN
-    
-    SELECT opening_balance + SUM(IF(isIncoming, amount, 0)) - SUM(IF(isOutgoing, amount, 0)) current_balance,
+
+    SELECT opening_balance + SUM(IF(isIncoming, amount, 0)) - SUM(IF(isOutgoing, amount, 0)) AS current_balance,
            customer_id, account_id, first_name, last_name
     FROM customer_account_transaction_details
     GROUP BY account_id
     HAVING current_balance > input_amount -- Comparing against procedure input value
     ORDER BY current_balance DESC;
-            
+ 
 END $$
 DELIMITER ;
 
@@ -432,14 +432,15 @@ CALL find_customers_with_balance_greater_then(5000);
 /* (4) The Bank management team often needs to know the "Total Outstandings" of the bank.
 The Total Outstandings is the up-to-date balance over all bank accounts. */
 
-/* We can achieve this easier with subqueries, a join is not needed and might hurt 
+/* We can achieve this easier with subqueries, a join is not needed and might hurt
 logical readability, for this particular statement. */
-SELECT 
+SELECT
 	SUM(a.opening_balance) -- Sum all accounts opening balance,
 	+
     (SELECT SUM(amount) -- Add sum of all accounts incoming money
     FROM transaction WHERE isIncoming)
-    - 
+    -
     (SELECT SUM(Amount) -- Minus sum off all accounts outgoing money
-    FROM transaction WHERE isOutgoing) total_outstanding -- Call the result 'total_outstanding'
+    FROM transaction WHERE isOutgoing) AS total_outstanding -- Call the result 'total_outstanding'
 FROM account a;
+
