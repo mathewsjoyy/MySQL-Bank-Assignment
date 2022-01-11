@@ -112,6 +112,13 @@ CREATE TABLE customer_contact_number (
     PRIMARY KEY (customer_id, contact_id)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+-- Log table for total outstanding amounts
+DROP TABLE IF EXISTS total_outstanding_log;
+CREATE TABLE total_outstanding_log (
+	total_outstanding DECIMAL(13,2) NOT NULL,
+    log_time DATETIME NOT NULL DEFAULT NOW()
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 
 /* Add foreign keys and any neccessary constraints. */
 /* KEY : fk_[referencing table name]_[referenced table name]_[referencing field name]. */
@@ -446,24 +453,41 @@ FROM account a;
 
 -- Stored procedure version
 DELIMITER $$
-CREATE PROCEDURE IF NOT EXISTS find_total_outstanding(OUT total DECIMAL(13,2)) 
+CREATE PROCEDURE IF NOT EXISTS insert_total_outstanding_log(IN total_outstanding DECIMAL(13,2), OUT reply VARCHAR(150)) 
 BEGIN
+    
+    INSERT INTO total_outstanding_log VALUES(total_outstanding, CURRENT_DATE); -- Insert into log table
+    
+	SET reply = CONCAT('Total outstanding (',
+                       CAST(total_outstanding AS CHAR),
+                       ') log inserted successfully ', CAST(NOW() AS CHAR)); -- Set a log message
 
+END $$
+DELIMITER ;
+
+DELIMITER $$
+CREATE PROCEDURE IF NOT EXISTS log_total_outstanding(OUT message VARCHAR(150)) 
+BEGIN
+	
+    DECLARE total_outstanding DECIMAL(13,2); -- Used to store total outstanding amount
+    
     SELECT
         SUM(a.opening_balance)
         +
         (SELECT SUM(amount)
         FROM transaction WHERE isIncoming)
-        -
+        - 
         (SELECT SUM(Amount)
         FROM transaction WHERE isOutgoing) AS total_outstanding
-        INTO total -- Assign the value to output parameter
+        INTO total_outstanding -- Assign the value to declared total outstanding variable
     FROM account a;
+    
+    -- Call inserting log procedure (nested)
+    CALL insert_total_outstanding_log(total_outstanding, message);
 
 END $$
 DELIMITER ;
 
-CALL find_total_outstanding(@total_outstanding);
-
-SELECT @total_outstanding; -- Display total oustanding amount
+CALL log_total_outstanding(@message);
+SELECT @message; -- Display log message
 
