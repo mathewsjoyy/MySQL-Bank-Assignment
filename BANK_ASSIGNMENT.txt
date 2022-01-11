@@ -349,7 +349,7 @@ VALUES
 
 -- (1) List all bank customers who have their loan payment due in the first 7 days of the month.
 -- Using joins to be able to combine records from multiple tables and link forgein key relations
-SELECT c.first_name, c.last_name, c.customer_id, a.account_number, a.account_type_id
+SELECT c.first_name, c.last_name, c.customer_id, a.account_number, a.account_id, a.account_type_id
 FROM customer AS c
 INNER JOIN customer_account AS ca ON c.customer_id = ca.customer_id
 INNER JOIN account AS a ON ca.account_id = a.account_id
@@ -422,7 +422,7 @@ BEGIN
     GROUP BY account_id
     HAVING current_balance > input_amount -- Comparing against procedure input value
     ORDER BY current_balance DESC;
- 
+
 END $$
 DELIMITER ;
 
@@ -435,7 +435,7 @@ The Total Outstandings is the up-to-date balance over all bank accounts. */
 /* We can achieve this easier with subqueries, a join is not needed and might hurt
 logical readability, for this particular statement. */
 SELECT
-	SUM(a.opening_balance) -- Sum all accounts opening balance,
+	SUM(a.opening_balance) -- Sum all accounts opening balance
 	+
     (SELECT SUM(amount) -- Add sum of all accounts incoming money
     FROM transaction WHERE isIncoming)
@@ -443,4 +443,27 @@ SELECT
     (SELECT SUM(Amount) -- Minus sum off all accounts outgoing money
     FROM transaction WHERE isOutgoing) AS total_outstanding -- Call the result 'total_outstanding'
 FROM account a;
+
+-- Stored procedure version
+DELIMITER $$
+CREATE PROCEDURE IF NOT EXISTS find_total_outstanding(OUT total DECIMAL(13,2)) 
+BEGIN
+
+    SELECT
+        SUM(a.opening_balance)
+        +
+        (SELECT SUM(amount)
+        FROM transaction WHERE isIncoming)
+        -
+        (SELECT SUM(Amount)
+        FROM transaction WHERE isOutgoing) AS total_outstanding
+        INTO total -- Assign the value to output parameter
+    FROM account a;
+
+END $$
+DELIMITER ;
+
+CALL find_total_outstanding(@total_outstanding);
+
+SELECT @total_outstanding; -- Display total oustanding amount
 
