@@ -326,6 +326,7 @@ VALUES
 (1, "2020-02-09 22:34:57", true, false, 0.85, "PAYMENT"),
 (1, "2020-02-13 08:55:32", true, false, 6.90, "PAYMENT"),
 (2, "2020-02-14 19:56:17", false, true, 250, "DIRECTDEPOSIT"),
+(2, "2020-02-14 12:00:00", false, true, 2400, "LOAN"),
 (2, "2020-02-15 14:09:53", false, true, 50, "DEPOSIT"),
 (2, "2020-02-16 14:08:18", true, false, 15.90, "PAYMENT"),
 (2, "2020-02-19 11:11:11", true, false, 0.99, "FEE"),
@@ -333,13 +334,17 @@ VALUES
 (2, "2020-02-23 05:08:05", true, false, 4.50, "PAYMENT"),
 (2, "2020-02-27 13:08:25", true, false, 0.50, "FEE"),
 (4, "2020-06-12 07:09:41", true, false, 5.25, "PAYMENT"),
+(4, "2020-06-12 12:00:00", false, true, 7500, "LOAN"),
 (4, "2020-06-13 21:57:15", true, false, 2.30, "PAYMENT"),
 (4, "2020-06-23 15:32:34", true, false, 12.45, "PAYMENT"),
 (4, "2020-06-25 20:54:59", true, false, 40.00, "WITHDRAWAL"),
 (4, "2020-06-27 22:08:34", false, true, 100.75, "DIRECTDEPOSIT"),
 (4, "2020-06-29 23:14:12", true, false, 0.99, "PAYMENT"),
 (4, "2020-06-29 09:08:45", true, false, 1.25, "FEE"),
-(8, "2021-04-16 21:03:07", false, true, 185, "DIRECTDEPOSIT"),	             
+(6, "2020-12-05 12:00:00", false, true, 2257.50, "LOAN"),
+(7, "2021-03-01 12:00:00", false, true, 6800, "LOAN"),
+(8, "2021-04-16 21:03:07", false, true, 185, "DIRECTDEPOSIT"),	
+(8, "2021-04-25 12:00:00", false, true, 4329, "LOAN"),
 (4, "2021-07-18 18:32:57", true, false, 300, "LOAN"),
 (4, "2021-07-19 20:10:45", false, true, 920, "TRANSFER"),   
 (6, "2021-08-01 06:37:39", true, false, 150.50, "LOAN"),	
@@ -353,7 +358,6 @@ VALUES
 
 
 -- Query Tasks
-
 -- (1) List all bank customers who have their loan payment due in the first 7 days of the month.
 -- Using joins to be able to combine records from multiple tables and link forgein key relations
 SELECT c.first_name, c.last_name, c.customer_id, a.account_number, a.account_id, a.account_type_id
@@ -383,7 +387,7 @@ SET @current_date := CURDATE(); -- Get the current date and store in a variable
 
 SELECT customer_id, account_id, transaction_date, amount, transaction_type_id, isOutgoing, isIncoming
 FROM customer_account_transaction_details -- Use view we created earlier
-WHERE transaction_date >= SUBDATE(@current_date, 5) -- SUBDATE minuses X days (5) to a Y date
+WHERE transaction_date > SUBDATE(@current_date, 5) -- SUBDATE minuses X days (5) to a Y date
       AND transaction_date <= @current_date
 ORDER BY transaction_date DESC;
 
@@ -395,7 +399,7 @@ BEGIN
 
     SELECT customer_id , account_id, transaction_date, amount, transaction_type_id, isOutgoing, isIncoming
     FROM customer_account_transaction_details
-    WHERE transaction_date >= SUBDATE(input_date, 5) -- using procedure input date
+    WHERE transaction_date > SUBDATE(input_date, 5) -- using procedure input date
     	  AND transaction_date <= input_date
     ORDER BY transaction_date DESC;
     
