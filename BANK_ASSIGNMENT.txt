@@ -13,7 +13,8 @@ CREATE TABLE branch (
     address_id INT NOT NULL, 
     branch_name VARCHAR(50) NOT NULL,
     PRIMARY KEY (branch_id),
-    UNIQUE (address_id), -- We have 2 seperate unqiues as they're individually unqiue
+    -- We have 2 seperate unqiues as they're individually unqiue
+    UNIQUE (address_id),
     UNIQUE (branch_name)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -67,7 +68,7 @@ CREATE TABLE address (
     state VARCHAR(50) NOT NULL,
     city VARCHAR(50),
     PRIMARY KEY (address_id),
-    INDEX(postal_code)
+    INDEX(postal_code) -- Common index for searching
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE transaction (
@@ -85,7 +86,7 @@ CREATE TABLE transaction_type (
 	transaction_type_id VARCHAR(15),
     description VARCHAR(255) NOT NULL,
     PRIMARY KEY (transaction_type_id),
-    UNIQUE(description)
+    UNIQUE(description) -- Ensure we dont have same transaction types with same description
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE loan (
@@ -266,7 +267,7 @@ VALUES
 ("SAVINGSACC", "With a saving account you pay money into and earn interest from."),
 ("JOINTACC", "A joint account is a simple way for two people to share access to the same bank account creating one monthly statement.");
 
-/* the bank code and bank branch code is encoded into the sort number, e.g. the format of the sort code is XXYYZZ where XX = 55 (the bank code for our bank),
+/* The bank code and bank branch code is encoded into the sort number, e.g. the format of the sort code is XXYYZZ where XX = 55 (the bank code for our bank),
 YY and ZZ = branch id. The account number is just a random set of 8 characters.*/
 INSERT INTO account (account_id, account_type_id, opening_balance, account_number, sort_code, created_date, branch_id)
 VALUES
@@ -382,7 +383,6 @@ INNER JOIN transaction AS t ON a.account_id = t.account_id;
 -- (2) Extract all bank transactions that were made in the past 5 days.
 /* I have choosen to this task as a stored procedure as well. The user can enter a date and,
 it will show transactions from any account in previous 5 days from that date.*/
-
 SET @current_date := CURDATE(); -- Get the current date and store in a variable
 
 SELECT customer_id, account_id, transaction_date, amount, transaction_type_id, isOutgoing, isIncoming
@@ -455,7 +455,7 @@ SELECT
     FROM transaction WHERE isOutgoing) AS total_outstanding -- Call the result 'total_outstanding'
 FROM account a;
 
--- Stored procedure version
+-- Procedure to inserts a given total outstanding into total outstanding log table
 DELIMITER $$
 CREATE PROCEDURE IF NOT EXISTS insert_total_outstanding_log(IN total_outstanding DECIMAL(13,2), OUT reply VARCHAR(150)) 
 BEGIN
@@ -469,6 +469,7 @@ BEGIN
 END $$
 DELIMITER ;
 
+-- Procedure that calculates the total outstanding and calls the above procedure to insert it into log table
 DELIMITER $$
 CREATE PROCEDURE IF NOT EXISTS log_total_outstanding(OUT message VARCHAR(150)) 
 BEGIN
